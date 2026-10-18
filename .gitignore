@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# PDF binaries (download on demand via scripts/download_papers.py)
+Papers/*.pdf
+!Papers/.gitkeep
+
+# OS generated files
+.DS_Store
+Thumbs.db

@@ -1,126 +1,72 @@
-# Geoffrey Hinton Paper Replications
+# Deep Learning Foundations: Geoffrey Hinton Papers & Replications in PyTorch
 
-Educational **PyTorch** implementations of the most influential research papers by **Geoffrey Hinton and his collaborators**.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c.svg)](https://pytorch.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-This repository follows the evolution of deep learning, from **Boltzmann Machines** and **Backpropagation** to **Deep Belief Networks**, **Dropout**, **Knowledge Distillation**, **Capsule Networks**, the **Forward-Forward Algorithm**, and **t-SNE**.
+A structured, educational journey to master modern deep learning and AI fundamentals through step-by-step mathematical notes and PyTorch implementations of **Geoffrey Hinton's landmark papers**.
 
----
-
-##  Goals
-
-- Read and understand Geoffrey Hinton's foundational papers.
-- Reproduce the core algorithms in PyTorch.
-- Build clean, educational implementations.
-- Visualize learning dynamics and learned representations.
-- Document implementation details, assumptions, and simplifications.
+From **Backpropagation** and **Vector Embeddings** to **Transformers (LayerNorm)**, **Mixture of Experts (MoE)**, and **Deep Belief Nets**.
 
 ---
 
-# Paper Roadmap
+## 🚀 Quick Navigation
 
-| # | Year | Paper |
-|--:|----:|--------|
-| 01 | 1977 | Relaxation and Its Role in Vision (PhD Thesis) |
-| 02 | 1985 | A Learning Algorithm for Boltzmann Machines |
-| 03 | 1986 | Learning Representations by Back-Propagating Errors |
-| 04 | 1986 | Distributed Representations |
-| 05 | 1986 | Learning Internal Representations by Error Propagation |
-| 06 | 1991 | Adaptive Mixtures of Local Experts |
-| 07 | 1992 | How Neural Networks Learn from Experience |
-| 08 | 1992 | Stochastic Neighbor Embedding |
-| 09 | 1994 | Autoencoders, Minimum Description Length and Helmholtz Free Energy |
-| 10 | 1995 | The Helmholtz Machine |
-| 11 | 1995 | The Wake-Sleep Algorithm |
-| 12 | 1999 | Products of Experts |
-| 13 | 2002 | Training Products of Experts by Minimizing Contrastive Divergence |
-| 14 | 2006 | A Fast Learning Algorithm for Deep Belief Nets |
-| 15 | 2006 | Reducing the Dimensionality of Data with Neural Networks |
-| 16 | 2007 | Restricted Boltzmann Machines for Collaborative Filtering |
-| 17 | 2008 | Visualizing Data using t-SNE |
-| 18 | 2009 | Deep Boltzmann Machines |
-| 19 | 2010 | Rectified Linear Units Improve Restricted Boltzmann Machines |
-| 20 | 2012 | Deep Neural Networks for Acoustic Modeling in Speech Recognition |
-| 21 | 2012 | ImageNet Classification with Deep Convolutional Neural Networks (AlexNet) |
-| 22 | 2013 | On the Importance of Initialization and Momentum in Deep Learning |
-| 23 | 2014 | Dropout: A Simple Way to Prevent Neural Networks from Overfitting |
-| 24 | 2015 | Distilling the Knowledge in a Neural Network |
-| 25 | 2016 | Layer Normalization |
-| 26 | 2016 | Using Fast Weights to Attend to the Recent Past |
-| 27 | 2017 | Dynamic Routing Between Capsules |
-| 28 | 2018 | Matrix Capsules with EM Routing |
-| 29 | 2021 | How to Represent Part-Whole Hierarchies in a Neural Network |
-| 30 | 2022 | The Forward-Forward Algorithm: Some Preliminary Investigations |
+* 🗺️ **[ROADMAP.md](ROADMAP.md)** — **Curated Modern AI study roadmap (12 high-impact papers)**.
+* 📝 **[notes/](notes/)** — Deep-dive mathematical notes and derivations.
+* 📥 **[scripts/download_papers.py](scripts/download_papers.py)** — Automatically downloads all research papers into `Papers/`.
+* 📦 **[archive/](archive/)** — Additional historical papers and exploratory implementations.
 
 ---
 
-# Recommended Learning Path
+## 🎯 Goals
 
-If you're new to Geoffrey Hinton's work, a good progression is:
-
-1. Backpropagation
-2. Boltzmann Machines
-3. Contrastive Divergence
-4. Deep Belief Networks
-5. Deep Autoencoders
-6. t-SNE
-7. AlexNet
-8. Dropout
-9. Knowledge Distillation
-10. Capsule Networks
-11. Forward-Forward Algorithm
+- **Understand the Math:** Line-by-line breakdown of optimization, energy models, and graphical models.
+- **Connect Theory to Modern AI:** Trace how 1980s–2010s breakthroughs formed today's Transformers, LLMs, and diffusion models.
+- **Clean PyTorch Replications:** Understand each algorithm via readable, reproducible code.
+- **Track Progress:** Document assumptions, math derivations, and learning dynamics.
 
 ---
 
+## 📥 Downloading Research Papers
 
-# Philosophy
+To keep the repository lightweight, original PDF papers are not stored in git. You can download all 22 foundational papers in one command:
 
-The goal of this repository is **education rather than benchmark reproduction**.
-
-Implementations prioritize:
-
-- readability
-- modular code
-- mathematical clarity
-- reproducibility
-- visualization
-- extensive comments
-
-Whenever the original paper uses computationally expensive experiments, simplified versions are provided while preserving the core algorithmic ideas.
+```bash
+python scripts/download_papers.py
+```
+This downloads the original papers directly into the `Papers/` directory.
 
 ---
 
-# Disclaimer
+## 📚 Curated Study Roadmap (Core 12 Papers)
 
-These implementations may use:
+| Phase | # | Paper | Core Modern Concept | Notebook |
+| :---: | :---: | :--- | :--- | :--- |
+| **1. Optimization & Embeddings** | 01 | **Backpropagation (1986)** | Gradient descent, chain rule | [Notebook](Learning_representations_by_back_propagating_errors.ipynb) |
+| | 02 | **Distributed Representations (1986)** | Vector embeddings & latent geometry | [Notebook](Distributed_Representations.ipynb) |
+| | 03 | **Initialization & Momentum (2013)** | Xavier/He initialization, Nesterov momentum | [Notebook](On_the_importance_of_initialization_and_momentum_in_deep_learning.ipynb) |
+| **2. Modern Architecture Blocks** | 04 | **ReLU Activation (2010)** | Non-saturating activations | [Notebook](Rectified_Linear_Units_Improve_Restricted_Boltzmann_Machines.ipynb) |
+| | 05 | **Dropout (2014)** | Ensembling & regularization | [Notebook](Dropout_A_Simple_Way_to_Prevent_Neural_Networks_from_overfitting.ipynb) |
+| | 06 | **Layer Normalization (2016)** | **Core of all Transformers & LLMs** | [Notebook](Layer_Normalization.ipynb) |
+| | 07 | **Mixture of Experts / MoE (1991)** | **Modern Sparse Frontier LLMs** | [Notebook](Adaptive_Mixtures_of_Local_Experts.ipynb) |
+| **3. Scaling & Practical DL** | 08 | **AlexNet (2012)** | Convolutions, GPUs, ImageNet | [Notebook](ImageNet_Classification_with_Deep_Convolutional_Neural_Networks_AlexNet.ipynb) |
+| | 09 | **t-SNE (2008)** | High-dimensional embedding visualization | [Notebook](Visualizing_Data_using_t_SNE.ipynb) |
+| | 10 | **Knowledge Distillation (2015)** | Teacher-student model compression | [Notebook](Distilling_the_Knowledge_in_a_Neural_Network.ipynb) |
+| **4. Generative & Energy Models** | 11 | **Boltzmann Machines & CD (1985/2002)** | Energy landscapes, MCMC, CD-1 | [Notebook 1](A_Learning_Algorithm_for_Boltzmann_Machines.ipynb) / [Notebook 2](Training_Products_of_Experts_by_Minimizing_Contrastive_Divergence.ipynb) |
+| | 12 | **Deep Belief Nets (2006)** | Layer-wise pre-training, complementary priors | [Notebook](A_fast_learning_algorithm_for_deep_belief_nets.ipynb) |
 
-- smaller datasets
-- reduced model sizes
-- fewer training epochs
-- simplified hyperparameters
-
-They should be considered **educational reproductions**, not exact replications of the original experimental results.
-
----
-
-# References
-
-Each project includes:
-
-- Original paper
-- Mathematical derivations
-- Implementation notes
-- Additional resources when appropriate
+*For the full 30-paper collection, see the [archive/](archive/) directory.*
 
 ---
 
-# Author
+## 🛠️ Credits & Attribution
 
-**Mohammed Fahd Abrah**
-
-AI Engineer • Technical Writer
+- **Implementations:** Originally created by **Mohammed Fahd Abrah** ([MOHAMMEDFAHD](https://github.com/MOHAMMEDFAHD/Geoffrey-Hinton-Papers-Replicating-In-Pytorch)).
+- **Curated Roadmap & Mathematical Study Hub:** Maintained by **Parameswar Rout** ([@parameswarrout](https://github.com/parameswarrout)).
 
 ---
 
-# License
+## 📄 License
 
-This project is released under the **MIT License**.
+This repository is distributed under the **MIT License**.
