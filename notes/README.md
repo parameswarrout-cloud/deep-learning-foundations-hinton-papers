@@ -58,3 +58,8 @@ When adding notes for a new paper:
 2. Create an `images/` subfolder: `notes/<XX_YEAR_PaperName>/images/` for all GIFs, PNGs, and illustrations.
 3. Write `README.md` inside `notes/<XX_YEAR_PaperName>/` referencing its images using relative paths (`images/filename.ext`).
 4. Update the Master Index table above.
+
+## Focused equation guides
+
+- [Weighted inputs and worked examples](01_1986_Backpropagation/01_1986_Backpropagation_Line_by_Line_Explanation.md#example-1-three-inputs-feeding-two-neurons)
+- [Weighted-sum animation code](01_1986_Backpropagation/Aimation-code/animate_weighted_sum.py)

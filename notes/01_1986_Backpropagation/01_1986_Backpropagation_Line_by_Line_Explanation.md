@@ -1,9 +1,9 @@
 # Line-by-Line Study Guide & Notes: "Learning Representations by Back-Propagating Errors" (1986)
 
-**Paper:** _Learning representations by back-propagating errors_  
-**Authors:** David E. Rumelhart, Geoffrey E. Hinton, Ronald J. Williams  
-**Publication:** _Nature_, Vol. 323, 9 October 1986, pp. 533–536  
-**Repository Document:** [01_1986_Backpropagation.pdf](file:///e:/AI/Geoffrey-Hinton-Papers-Replicating-In-Pytorch/Papers/01_1986_Backpropagation.pdf)  
+**Paper:** _Learning representations by back-propagating errors_
+**Authors:** David E. Rumelhart, Geoffrey E. Hinton, Ronald J. Williams
+**Publication:** _Nature_, Vol. 323, 9 October 1986, pp. 533–536
+**Repository Document:** [01_1986_Backpropagation.pdf](file:///e:/AI/Geoffrey-Hinton-Papers-Replicating-In-Pytorch/Papers/01_1986_Backpropagation.pdf)
 **Accompanying Code Notebook:** [Learning_representations_by_back_propagating_errors.ipynb](file:///e:/AI/Geoffrey-Hinton-Papers-Replicating-In-Pytorch/Learning_representations_by_back_propagating_errors.ipynb)
 
 ---
@@ -51,14 +51,128 @@ Rumelhart, Hinton, and Williams solved this crisis by formulating **back-propaga
 
 ## Part 2: Architecture & Forward Propagation
 
+### Beginner's Note: What Do i, j, k, and c Mean?
+
+**These letters are indices: labels or counters that tell us which neuron or training example we mean.** Think of them like row numbers in a table. They are not extra values that we multiply into the equation: $y_i$ means "the output of neuron number $i$," not $y \times i$.
+
+Their meaning depends on the equation. In this guide:
+
+| Symbol | Meaning |
+| --- | --- |
+| $i$ | Usually the sending neuron in a connection |
+| $j$ | Usually the receiving neuron; in the loss formula, an output neuron |
+| $k$ | Another neuron index, often a temporary counter inside a sum |
+| $c$ | A training case: one input and its desired output, **not a class index here** |
+| $y_i$ | Activation (output value) of neuron $i$ |
+| $x_j$ | Total weighted input to neuron $j$, before applying sigmoid |
+| $w_{ji}$ | Weight from sending neuron $i$ to receiving neuron $j$: read the indices as **destination, source** |
+| $b_j$ | Bias of neuron $j$ |
+| $d_{j,c}$ | Desired output of neuron $j$ for training case $c$ |
+| $\sum$ | Add the terms as the indicated counter runs through its values |
+
+**Notation reminder:** Our earlier chat used $x_i$ for an input value. This paper uses $y_i$ for a sending neuron's output and $x_j$ for a receiving neuron's weighted input. Follow the definitions in the equation you are reading; letters do not have universal meanings.
+
+#### Example 1: Three Inputs Feeding Two Neurons
+
+Label the input units 1, 2, and 3, and the receiving units 4 and 5. Using distinct neuron numbers avoids confusing an input unit with a receiving unit.
+
+For either receiving neuron:
+
+$$
+x_j = \sum_{i=1}^{3} y_i w_{ji} + b_j,
+\qquad y_j = \sigma(x_j)
+$$
+
+Read this as: "For neuron $j$, multiply each incoming value by its connection weight, add the results and the bias, then apply sigmoid."
+
+To calculate neuron 4, **hold $j=4$ fixed while $i$ runs through 1, 2, and 3**:
+
+$$
+x_4 = y_1w_{41} + y_2w_{42} + y_3w_{43} + b_4
+$$
+
+Suppose the inputs are $y_1=1$, $y_2=0.5$, $y_3=0$, and the weights are $w_{41}=0.2$, $w_{42}=0.6$, $w_{43}=-0.4$, with bias $b_4=0.1$:
+
+$$
+x_4 = (1)(0.2) + (0.5)(0.6) + (0)(-0.4) + 0.1 = 0.6
+$$
+
+$$
+y_4 = \frac{1}{1+e^{-0.6}} \approx 0.646
+$$
+
+For neuron 5, set $j=5$ and use its own weights and bias:
+
+$$
+x_5 = y_1w_{51} + y_2w_{52} + y_3w_{53} + b_5
+$$
+
+The same three inputs feed both neurons, but different weights can produce different outputs. For example, $w_{42}$ is specifically the connection **from input unit 2 to neuron 4**.
+
+#### Example 2: Why Does k Appear When We Already Have i and j?
+
+A summation counter is a temporary name. These expressions mean exactly the same thing:
+
+$$
+\sum_{i=1}^{3} y_iw_{4i}
+= \sum_{k=1}^{3} y_kw_{4k}
+= y_1w_{41}+y_2w_{42}+y_3w_{43}
+$$
+
+We change the counter's name when another index is already being used to select something specific. Later in the loss derivation:
+
+$$
+E = \frac{1}{2}\sum_k(y_k-d_k)^2
+$$
+
+Here $k$ runs over all output neurons for one training case. When we differentiate with respect to one chosen output $y_j$, only that output's term depends on $y_j$ (treating the outputs as independent coordinates):
+
+$$
+\frac{\partial E}{\partial y_j}=y_j-d_j
+$$
+
+So **$k$ counts all the outputs; $j$ selects the output we are examining**. The letter $k$ does not automatically mean "hidden layer" or "third layer."
+
+#### Example 3: What Does c Mean in the Loss Function?
+
+$$
+E = \frac{1}{2}\sum_c\sum_j(y_{j,c}-d_{j,c})^2
+$$
+
+Read this as: "For each training case $c$, add the squared errors of its output neurons $j$. Then add those totals across the cases and multiply by one half."
+
+For a small example with two output neurons (4 and 5) and two training cases:
+
+| Case $c$ | Prediction $y_{4,c}$ | Target $d_{4,c}$ | Prediction $y_{5,c}$ | Target $d_{5,c}$ |
+| --- | --- | --- | --- | --- |
+| 1 | 0.8 | 1 | 0.3 | 0 |
+| 2 | 0.4 | 0 | 0.9 | 1 |
+
+For example, $y_{5,2}=0.9$ means "neuron 5's prediction for training case 2."
+
+Expanding both sums gives:
+
+$$
+E = \frac{1}{2}\left[(0.8-1)^2+(0.3-0)^2+(0.4-0)^2+(0.9-1)^2\right]
+= \frac{1}{2}(0.04+0.09+0.16+0.01)=0.15
+$$
+
+When the paper says it is "suppressing the index $c$," it is focusing on one case and leaving $c$ unwritten to simplify the notation. Thus $y_{j,c}$ becomes $y_j$ for that case; the example has not disappeared.
+
+**Reading habit:** First ask what each index selects, then identify which index stays fixed and which one runs through a sum. Expand a sum into two or three terms whenever it feels abstract.
+
 ### Original Text (Lines 168–198)
 
 > _"The simplest form of the learning procedure is for layered networks which have a layer of input units at the bottom; any number of intermediate layers; and a layer of output units at the top. Connections within a layer or from higher to lower layers are forbidden, but connections can skip intermediate layers. An input vector is presented to the network by setting the states of the input units. Then the states of the units in each layer are determined by applying equations (1) and (2) to the connections coming from lower layers. All units within a layer have their states set in parallel, but different layers have their states set sequentially, starting at the bottom and working upwards until the states of the output units are determined._
 >
 > _The total input, $x_j$, to unit $j$ is a linear function of the outputs, $y_i$, of the units that are connected to $j$ and of the weights, $w_{ji}$, on these connections:_
-> $$x_j = \sum_i y_i w_{ji} \quad (1)$$
 >
-> _Units can be given biases by introducing an extra input to each unit which always has a value of 1. The weight on this extra input is called the bias and is equivalent to a threshold of the opposite sign. It can be treated just like the other weights._
+> $$
+> x_j = \sum_i y_i w_{ji} \quad (1)
+> $$
+>
+> _![Animation showing how a neuron adds weighted inputs](images/weighted_sum_animation.gif)
+> Units can be given biases by introducing an extra input to each unit which always has a value of 1. The weight on this extra input is called the bias and is equivalent to a threshold of the opposite sign. It can be treated just like the other weights._
 >
 > _A unit has a real-valued output, $y_j$, which is a non-linear function of its total input:_
 >
@@ -72,30 +186,78 @@ Rumelhart, Hinton, and Williams solved this crisis by formulating **back-propaga
 
 #### 1. Input Accumulation (Equation 1):
 
-$$x_j = \sum_i y_i w_{ji}$$
+$$
+x_j = \sum_i y_i w_{ji}
+$$
 
 - $x_j$ is the total net pre-activation input to unit $j$.
 - $y_i$ is the activation output of unit $i$ from the preceding layer.
 - $w_{ji}$ is the connection weight from sending unit $i$ to receiving unit $j$.
 - **Bias Formulation:** A bias $b_j$ shifts the activation threshold. The authors implement this seamlessly:
-  $$x_j = \sum_{i=1}^n y_i w_{ji} + b_j = \sum_{i=0}^n y_i w_{ji} \quad \text{where } y_0 = 1, w_{j0} = b_j$$
+  $$
+  x_j = \sum_{i=1}^n y_i w_{ji} + b_j = \sum_{i=0}^n y_i w_{ji} \quad \text{where } y_0 = 1, w_{j0} = b_j
+  $$
 
 #### 2. The Logistic Sigmoid Activation (Equation 2):
 
-$$y_j = \sigma(x_j) = \frac{1}{1 + e^{-x_j}}$$
+$$
+y_j = \sigma(x_j) = \frac{1}{1 + e^{-x_j}}
+$$
 
-- **Why Sigmoid over Step Functions?**
-  - Rosenblatt's perceptron used a Heaviside step function:
-    $$f(x) = \begin{cases} 1 & x \ge 0 \\ 0 & x < 0 \end{cases}$$
-    Its derivative is zero everywhere (and undefined at $0$). Gradient descent requires non-zero derivatives to know which direction to update weights.
-  - The sigmoid function $\sigma(x)$ is continuous, strictly monotonic, bounded between $(0, 1)$, and smooth everywhere.
-- **Mathematical Derivation of the Sigmoid Derivative:**
-  Let $y = \frac{1}{1 + e^{-x}} = (1 + e^{-x})^{-1}$.
-  $$\frac{dy}{dx} = -1(1 + e^{-x})^{-2} \cdot (-e^{-x}) = \frac{e^{-x}}{(1 + e^{-x})^2}$$
-  Notice that:
-  $$\frac{e^{-x}}{(1 + e^{-x})^2} = \left(\frac{1}{1 + e^{-x}}\right) \left(\frac{e^{-x}}{1 + e^{-x}}\right) = \left(\frac{1}{1 + e^{-x}}\right) \left(1 - \frac{1}{1 + e^{-x}}\right) = y(1 - y)$$
-  $$\therefore \frac{dy}{dx} = y(1 - y)$$
-  _This simple form makes the backward pass computationally efficient: computing the derivative requires no exponentials, only multiplying the existing output $y$ by $(1 - y)$!_
+
+**Why Sigmoid over Step Functions?**
+
+- Rosenblatt's perceptron used a Heaviside step function:
+
+  $$
+  f(x) = \begin{cases} 1 & x \ge 0 \\0.5 & x =0 \\ 0 & x < 0 \end{cases}
+  $$
+
+  Its derivative is zero everywhere (and undefined at $0$). Gradient descent requires non-zero derivatives to know which direction to update weights.
+- The sigmoid function $\sigma(x)$ is continuous, strictly monotonic, bounded between $(0, 1)$, and smooth everywhere.
+
+
+**Mathematical Derivation of the Sigmoid Derivative:**
+Let $y = \frac{1}{1 + e^{-x}} = (1 + e^{-x})^{-1}$.
+
+$$
+\frac{dy}{dx} = -1(1 + e^{-x})^{-2} \cdot (-e^{-x}) = \frac{e^{-x}}{(1 + e^{-x})^2}
+$$
+
+Notice that:
+
+$$
+\frac{e^{-x}}{(1 + e^{-x})^2} = \left(\frac{1}{1 + e^{-x}}\right) \left(\frac{e^{-x}}{1 + e^{-x}}\right) = \left(\frac{1}{1 + e^{-x}}\right) \left(1 - \frac{1}{1 + e^{-x}}\right) = y(1 - y)
+$$
+
+$$
+\therefore \frac{dy}{dx} = y(1 - y)
+$$
+
+_This simple form makes the backward pass computationally efficient: computing the derivative requires no exponentials, only multiplying the existing output $y$ by $(1 - y)$!_
+
+
+**Why choose sigmoid?**
+
+Useful for binary classification: Its output can represent the esimated probability of a class, such as "spam" versus "not spam".
+
+Smooth and differentiable: Small changes in the input produce smooth changes in the output, supporting gradient-based learning.
+
+**Why not always use sigmoid?**
+
+For large positive or negative inputs, sigmoid becomes nearly flat. Its derivative approaches zero, so learning can become very slow. Across many layers, this contributes to the  **vanishing gradient problem** . Its output is also always positive, rather than centered around zero.
+
+| Function | Where it is useful                                                               | Functions Images                                                                                                                                                                                                                                                           |
+| -------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sigmoid  | Output for binary classification; gates.                                         | ![Medium](https://miro.medium.com/0*D5do3xhv5ulF50w2.png)                                                                                                                                                                                                                  |
+| Tanh     | When bounded outputs between −1 and 1 are useful; also suffers from saturation. | ![Mastering Tanh: A Deep Dive into Balanced Activation for ...](https://miro.medium.com/v2/resize:fit:756/1*tOc--h-QU9_bHqWLPY9YLA.png)                                                                                                                                    |
+| ReLU     | Common choice for hidden layers; has gradient 1 for positive inputs              | ![ReLU Activation Function in Deep Learning - GeeksforGeeks](https://media.geeksforgeeks.org/wp-content/uploads/20260415161304513642/Relu-activation-function.png)                                                                                                         |
+| GELU     | Common in Transformer hidden layers                                              | ![Mathematical Analysis and Performance Evaluation of the GELU Activation Function in Deep Learning - Lee - 2023 - Journal of Mathematics - Wiley Online Library](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdhBwmnRYznzt5Q3c7NNK2TiJNaGjajQTRDBNpgvHCJw&s=10) |
+| Softmax  | Output for choosing among mutually exclusive classes                             | ![Activation Functions in Neural Networks - GeeksforGeeks](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6XUaKE0F-v78_ifiHRp_TgD0h6w7Xxfg6ro-_N4jj5A&s=10)                                                                                                        |
+
+
+
+
 
 ---
 
@@ -104,24 +266,45 @@ $$y_j = \sigma(x_j) = \frac{1}{1 + e^{-x_j}}$$
 ### Original Text (Lines 237–257, 301–324, 393–407)
 
 > _"The aim is to find a set of weights that ensure that for each input vector the output vector produced by the network is the same as (or sufficiently close to) the desired output vector... The total error, $E$, is defined as:_
-> $$E = \frac{1}{2} \sum_c \sum_j (y_{j,c} - d_{j,c})^2 \quad (3)$$
+>
+> $$
+> E = \frac{1}{2} \sum_c \sum_j (y_{j,c} - d_{j,c})^2 \quad (3)
+> $$
+>
 > _where $c$ is an index over cases (input-output pairs), $j$ is an index over output units, $y$ is the actual state of an output unit and $d$ is its desired state._
 >
 > _To minimize $E$ by gradient descent it is necessary to compute the partial derivative of $E$ with respect to each weight in the network. This is simply the sum of the partial derivatives for each of the input-output cases..._
 >
 > _The backward pass starts by computing $\partial E / \partial y$ for each of the output units. Differentiating equation (3) for a particular case, $c$, and suppressing the index $c$ gives:_
-> $$\frac{\partial E}{\partial y_j} = y_j - d_j \quad (4)$$
+>
+> $$
+> \frac{\partial E}{\partial y_j} = y_j - d_j \quad (4)
+> $$
 >
 > _We can then apply the chain rule to compute $\partial E / \partial x_j$:_
-> $$\frac{\partial E}{\partial x_j} = \frac{\partial E}{\partial y_j} \frac{dy_j}{dx_j}$$
+>
+> $$
+> \frac{\partial E}{\partial x_j} = \frac{\partial E}{\partial y_j} \frac{dy_j}{dx_j}
+> $$
+>
 > _Differentiating equation (2) to get the value of $dy_j/dx_j$ and substituting gives:_
-> $$\frac{\partial E}{\partial x_j} = \frac{\partial E}{\partial y_j} \cdot y_j (1 - y_j) \quad (5)$$
+>
+> $$
+> \frac{\partial E}{\partial x_j} = \frac{\partial E}{\partial y_j} \cdot y_j (1 - y_j) \quad (5)
+> $$
 >
 > _For a weight $w_{ji}$ from $i$ to $j$ the derivative is:_
-> $$\frac{\partial E}{\partial w_{ji}} = \frac{\partial E}{\partial x_j} \frac{\partial x_j}{\partial w_{ji}} = \frac{\partial E}{\partial x_j} \cdot y_i \quad (6)$$
+>
+> $$
+> \frac{\partial E}{\partial w_{ji}} = \frac{\partial E}{\partial x_j} \frac{\partial x_j}{\partial w_{ji}} = \frac{\partial E}{\partial x_j} \cdot y_i \quad (6)
+> $$
 >
 > _and for the output of the $i^{\text{th}}$ unit the contribution to $\partial E / \partial y_i$ resulting from the effect of $i$ on $j$ is simply:_
-> $$\frac{\partial E}{\partial x_j} \frac{\partial x_j}{\partial y_i} = \frac{\partial E}{\partial x_j} \cdot w_{ji}$$
+>
+> $$
+> \frac{\partial E}{\partial x_j} \frac{\partial x_j}{\partial y_i} = \frac{\partial E}{\partial x_j} \cdot w_{ji}
+> $$
+>
 > _so taking into account all the connections emanating from unit $i$ we have:_
 >
 > $$
@@ -136,44 +319,87 @@ Let us derive Equations (4) through (7) with full algebraic precision.
 
 ![Backpropagation Forward and Backward Error Flow Animation](images/backprop_flow_animation.gif)
 
-
 #### Step 1: Derivative of Loss with Respect to Output (Equation 4)
 
 For a single training example, the error is:
-$$E = \frac{1}{2} \sum_k (y_k - d_k)^2$$
+
+$$
+E = \frac{1}{2} \sum_k (y_k - d_k)^2
+$$
+
 Differentiating with respect to the output $y_j$ of output unit $j$:
-$$\frac{\partial E}{\partial y_j} = \frac{\partial}{\partial y_j} \left[ \frac{1}{2} (y_j - d_j)^2 \right] = \frac{1}{2} \cdot 2(y_j - d_j) \cdot 1 = y_j - d_j \quad \text{--- Eq. (4)}$$
+
+$$
+\frac{\partial E}{\partial y_j} = \frac{\partial}{\partial y_j} \left[ \frac{1}{2} (y_j - d_j)^2 \right] = \frac{1}{2} \cdot 2(y_j - d_j) \cdot 1 = y_j - d_j \quad \text{--- Eq. (4)}
+$$
+
 _(Note: The factor of $\frac{1}{2}$ cancels out cleanly with the power of 2.)_
 
 #### Step 2: Error Signal with Respect to Pre-Activation Input (Equation 5)
 
 By the chain rule:
-$$\frac{\partial E}{\partial x_j} = \frac{\partial E}{\partial y_j} \cdot \frac{\partial y_j}{\partial x_j}$$
+
+$$
+\frac{\partial E}{\partial x_j} = \frac{\partial E}{\partial y_j} \cdot \frac{\partial y_j}{\partial x_j}
+$$
+
 Using our earlier sigmoid derivative $\frac{\partial y_j}{\partial x_j} = y_j(1 - y_j)$:
-$$\frac{\partial E}{\partial x_j} = \frac{\partial E}{\partial y_j} \cdot y_j(1 - y_j) \quad \text{--- Eq. (5)}$$
+
+$$
+\frac{\partial E}{\partial x_j} = \frac{\partial E}{\partial y_j} \cdot y_j(1 - y_j) \quad \text{--- Eq. (5)}
+$$
+
 In modern deep learning literature, this quantity is often denoted by $\delta_j \equiv \frac{\partial E}{\partial x_j}$.
 
 #### Step 3: Gradient with Respect to Connection Weights (Equation 6)
 
 To find how the weight $w_{ji}$ (from unit $i$ to unit $j$) impacts the error:
-$$\frac{\partial E}{\partial w_{ji}} = \frac{\partial E}{\partial x_j} \cdot \frac{\partial x_j}{\partial w_{ji}}$$
+
+$$
+\frac{\partial E}{\partial w_{ji}} = \frac{\partial E}{\partial x_j} \cdot \frac{\partial x_j}{\partial w_{ji}}
+$$
+
 Since $x_j = \sum_k y_k w_{jk} = y_i w_{ji} + \sum_{k \neq i} y_k w_{jk}$, the partial derivative is simply:
-$$\frac{\partial x_j}{\partial w_{ji}} = y_i$$
+
+$$
+\frac{\partial x_j}{\partial w_{ji}} = y_i
+$$
+
 Therefore:
-$$\frac{\partial E}{\partial w_{ji}} = \frac{\partial E}{\partial x_j} \cdot y_i = \delta_j \cdot y_i \quad \text{--- Eq. (6)}$$
+
+$$
+\frac{\partial E}{\partial w_{ji}} = \frac{\partial E}{\partial x_j} \cdot y_i = \delta_j \cdot y_i \quad \text{--- Eq. (6)}
+$$
+
 **Intuitive interpretation:** The gradient of a weight is simply the **error signal of the receiving unit ($\delta_j$)** multiplied by the **activation of the sending unit ($y_i$)**. This is a purely local computation!
 
 #### Step 4: Propagating Error to Preceding Layers (Equation 7)
 
 Now consider an earlier unit $i$ whose output $y_i$ feeds into multiple receiving units $j$ in the layer above. How does changing $y_i$ affect total error $E$?
 By the multivariate chain rule:
-$$\frac{\partial E}{\partial y_i} = \sum_j \left( \frac{\partial E}{\partial x_j} \cdot \frac{\partial x_j}{\partial y_i} \right)$$
+
+$$
+\frac{\partial E}{\partial y_i} = \sum_j \left( \frac{\partial E}{\partial x_j} \cdot \frac{\partial x_j}{\partial y_i} \right)
+$$
+
 Since $x_j = \sum_k y_k w_{jk}$, the partial derivative $\frac{\partial x_j}{\partial y_i} = w_{ji}$. Substituting:
-$$\frac{\partial E}{\partial y_i} = \sum_j \frac{\partial E}{\partial x_j} \cdot w_{ji} = \sum_j \delta_j \cdot w_{ji} \quad \text{--- Eq. (7)}$$
+
+$$
+\frac{\partial E}{\partial y_i} = \sum_j \frac{\partial E}{\partial x_j} \cdot w_{ji} = \sum_j \delta_j \cdot w_{ji} \quad \text{--- Eq. (7)}
+$$
+
 Once we have $\frac{\partial E}{\partial y_i}$, we can immediately compute unit $i$'s input error signal via Equation (5):
-$$\frac{\partial E}{\partial x_i} = \frac{\partial E}{\partial y_i} \cdot y_i(1 - y_i)$$
+
+$$
+\frac{\partial E}{\partial x_i} = \frac{\partial E}{\partial y_i} \cdot y_i(1 - y_i)
+$$
+
 And then compute gradients for weights entering unit $i$ via Equation (6):
-$$\frac{\partial E}{\partial w_{ik}} = \frac{\partial E}{\partial x_i} \cdot y_k$$
+
+$$
+\frac{\partial E}{\partial w_{ik}} = \frac{\partial E}{\partial x_i} \cdot y_k
+$$
+
 **This recursive formula can be repeated backward through an arbitrary number of hidden layers!**
 
 ---
@@ -183,10 +409,17 @@ $$\frac{\partial E}{\partial w_{ik}} = \frac{\partial E}{\partial x_i} \cdot y_k
 ### Original Text (Lines 408–434)
 
 > _"One way of using $\partial E / \partial w$ is to change the weights after every input-output case. This has the advantage that no separate memory is required for the derivatives. An alternative scheme, which we used in the research reported here, is to accumulate $\partial E / \partial w$ over all the input-output cases before changing the weights. The simplest version of gradient descent is to change each weight by an amount proportional to the accumulated $\partial E / \partial w$:_
-> $$\Delta w = -\varepsilon \frac{\partial E}{\partial w} \quad (8)$$
+>
+> $$
+> \Delta w = -\varepsilon \frac{\partial E}{\partial w} \quad (8)
+> $$
 >
 > _This method does not converge as rapidly as methods which make use of the second derivatives, but it is much simpler and can easily be implemented by local computations in parallel hardware. It can be significantly improved, without sacrificing the simplicity and locality, by using an acceleration method in which the current gradient is used to modify the velocity of the point in weight space instead of its position:_
-> $$\Delta w(t) = -\varepsilon \frac{\partial E}{\partial w}(t) + \alpha \Delta w(t - 1) \quad (9)$$
+>
+> $$
+> \Delta w(t) = -\varepsilon \frac{\partial E}{\partial w}(t) + \alpha \Delta w(t - 1) \quad (9)
+> $$
+>
 > _where $t$ is incremented by 1 for each sweep through the whole set of input-output cases, and $\alpha$ is an exponential decay factor between 0 and 1 that determines the relative contribution of the current gradient and earlier gradients to the weight change._
 >
 > _To break symmetry we start with small random weights."_
@@ -194,34 +427,53 @@ $$\frac{\partial E}{\partial w_{ik}} = \frac{\partial E}{\partial x_i} \cdot y_k
 #### Detailed Analysis:
 
 1. **Online (Stochastic) vs. Batch Learning:**
+
    - _Online (Stochastic):_ Update weights after every single sample ($c$). Memory-efficient, introduces noise that can jump out of shallow local minima.
    - _Batch (Accumulated):_ Sum gradients over all $N$ training examples before taking a step. Smoother, accurate gradient of the true error surface. The 1986 paper uses full batch updates across "sweeps" (epochs).
-
 2. **Standard Gradient Descent (Equation 8):**
-   $$\Delta w = -\varepsilon \frac{\partial E}{\partial w}$$
+
+   $$
+   \Delta w = -\varepsilon \frac{\partial E}{\partial w}
+   $$
+
    - $\varepsilon$ is the **learning rate**.
    - If $\varepsilon$ is too large, the optimizer overshoots ravines and diverges. If too small, training is excruciatingly slow.
-
 3. **Momentum Acceleration (Equation 9):**
-   $$\Delta w(t) = -\varepsilon \frac{\partial E}{\partial w}(t) + \alpha \Delta w(t-1)$$
+
+   $$
+   \Delta w(t) = -\varepsilon \frac{\partial E}{\partial w}(t) + \alpha \Delta w(t-1)
+   $$
+
    - Physical analogy: A heavy ball rolling down an error landscape with friction.
    - If consecutive gradients point in the same direction, $\Delta w$ accumulates, accelerating descent down shallow plateaus:
-     $$\Delta w \approx -\frac{\varepsilon}{1 - \alpha} \frac{\partial E}{\partial w}$$
+
+     $$
+     \Delta w \approx -\frac{\varepsilon}{1 - \alpha} \frac{\partial E}{\partial w}
+     $$
+
      For $\alpha = 0.9$, the effective step size is multiplied by 10!
    - In narrow, oscillating ravines where gradients bounce back and forth, the alternating components cancel out, damping oscillations and stabilizing progress.
 
 ![Vanilla Gradient Descent vs. Momentum Acceleration Animation](images/momentum_vs_gd_animation.gif)
 
 4. **Symmetry Breaking:**
-   - If all weights start at identical values (e.g., zero), every hidden unit in a layer receives identical inputs, computes identical outputs, and receives identical gradient signals:
-     $$\delta_j = \delta_k \implies \Delta w_{ji} = \Delta w_{ki}$$
-   - The units would remain clones forever. Initializing weights with small random values breaks this symmetry, allowing units to specialize into different feature detectors.
 
+   - If all weights start at identical values (e.g., zero), every hidden unit in a layer receives identical inputs, computes identical outputs, and receives identical gradient signals:
+     $$
+     \delta_j = \delta_k \implies \Delta w_{ji} = \Delta w_{ki}
+     $$
+   - The units would remain clones forever. Initializing weights with small random values breaks this symmetry, allowing units to specialize into different feature detectors.
 5. **Weight Decay & Output Tolerances (Lines 357–365):**
+
    - **Weight Decay:** Every weight is decremented by a fraction (e.g., $0.2\%$) after each update. Equivalent to $L_2$ regularization:
-     $$w \leftarrow w(1 - \lambda)$$
+
+     $$
+     w \leftarrow w(1 - \lambda)
+     $$
+
      This prevents weights from exploding, forces unused connections towards zero, and leaves only functionally essential weights large and interpretable.
    - **Output Tolerance Margins:** If the target is $1$, an output $> 0.8$ is treated as having zero error. If the target is $0$, an output $< 0.2$ is treated as zero error.
+
      - _Why?_ Because the sigmoid $\sigma(x) = \frac{1}{1 + e^{-x}}$ reaches $1.0$ only at $x = +\infty$ and $0.0$ only at $x = -\infty$. Demanding exact $1.0$ or $0.0$ targets forces weights to grow infinitely large, causing gradient saturation.
 
 ---
@@ -234,7 +486,6 @@ $$\frac{\partial E}{\partial w_{ik}} = \frac{\partial E}{\partial x_i} \cdot y_k
 
 ![Mirror Symmetry Detection Network Architecture](images/symmetry_network_diagram.png)
 
-
 #### The Mathematical Ingenuity of the Learned Solution:
 
 1. **The Setup:** A 6-bit binary input string $(s_1, s_2, s_3, s_4, s_5, s_6) \in \{0, 1\}^6$. There are $2^6 = 64$ possible vectors. Only 8 are symmetric (e.g., `101101`, `010010`).
@@ -243,13 +494,22 @@ $$\frac{\partial E}{\partial w_{ik}} = \frac{\partial E}{\partial x_i} \cdot y_k
    - A single-layer perceptron computes $\sum_i w_i s_i$. Knowing $s_1 = 1$ provides zero evidence about whether the full vector is symmetric unless you compare it to $s_6$.
 3. **The Discovered Weight Pattern:**
    - Notice the weight ratio on one side of the midpoint: **$1 : 2 : 4$**!
-     $$\text{Weights for } s_1, s_2, s_3 = (-4, -2, -1)$$
-     $$\text{Weights for } s_4, s_5, s_6 = (+1, +2, +4)$$
+
+     $$
+     \text{Weights for } s_1, s_2, s_3 = (-4, -2, -1)
+     $$
+
+     $$
+     \text{Weights for } s_4, s_5, s_6 = (+1, +2, +4)
+     $$
    - This ratio corresponds to powers of 2 (binary place value!).
    - Every 3-bit combination $(s_1, s_2, s_3)$ produces a **unique integer sum** between $-7$ and $0$.
    - The right side $(s_4, s_5, s_6)$ produces a unique integer sum between $0$ and $+7$.
    - **The Sum Cancels to Exactly Zero IF AND ONLY IF the pattern is symmetric!**
-     $$(-4s_1 - 2s_2 - 1s_3) + (1s_4 + 2s_5 + 4s_6) = 0 \iff (s_1, s_2, s_3) = (s_6, s_5, s_4)$$
+
+     $$
+     (-4s_1 - 2s_2 - 1s_3) + (1s_4 + 2s_5 + 4s_6) = 0 \iff (s_1, s_2, s_3) = (s_6, s_5, s_4)
+     $$
 4. **The Gate Mechanism:**
    - Both hidden units have negative bias ($-1$). When net input is $0$, hidden units remain below threshold and stay **OFF** (output $\approx 0$).
    - If non-symmetric, one hidden unit receives positive input and turns **ON**.
@@ -267,7 +527,6 @@ $$\frac{\partial E}{\partial w_{ik}} = \frac{\partial E}{\partial x_i} \cdot y_k
 > _Fig. 4 The weights from the 24 input units... to the 6 units in the second layer... Unit 1 is primarily concerned with the distinction between English and Italian... Unit 2 encodes which generation a person belongs to, and unit 6 encodes which branch of the family they come from... Because the hidden features capture the underlying structure of the task domain, the network generalizes correctly to the four triples on which it was not trained."_
 
 ![5-Layer Relational Network and Learned Distributed Representations](images/family_tree_architecture.png)
-
 
 #### Crucial Insights:
 
@@ -299,7 +558,9 @@ $$\frac{\partial E}{\partial w_{ik}} = \frac{\partial E}{\partial x_i} \cdot y_k
    - In a physical recurrent network, there is only one set of connection weights $W$, reused at every time step $t \in \{1, 2, \dots, T\}$.
    - In the unrolled feed-forward network, each time-slice has a copy $W^{(t)}$.
    - To keep weights synchronized, the gradient for the shared parameter $w$ is the sum (or average) of gradients across all time steps:
-     $$\frac{\partial E}{\partial w} = \sum_{t=1}^T \frac{\partial E}{\partial w^{(t)}}$$
+     $$
+     \frac{\partial E}{\partial w} = \sum_{t=1}^T \frac{\partial E}{\partial w^{(t)}}
+     $$
 3. **Historical Significance:** This single paragraph laid the conceptual and mathematical foundation for **Recurrent Neural Networks (RNNs)** and **LSTMs**.
 
 ![Backpropagation Through Time and Recurrent Net Equivalence](images/bptt_recurrent_equivalence.png)
@@ -332,18 +593,18 @@ $$\frac{\partial E}{\partial w_{ik}} = \frac{\partial E}{\partial x_i} \cdot y_k
 
 ## Complete Equation Reference Sheet
 
-|  Eq #   | Formula                                                                              | Description & Role                                                           |
-| :-----: | :----------------------------------------------------------------------------------- | :--------------------------------------------------------------------------- |
-| **(1)** | $x_j = \sum_i y_i w_{ji}$                                                            | **Linear pre-activation aggregation:** Computes total input to unit $j$      |
+|     Eq #     | Formula                                                                                | Description & Role                                                                 |
+| :-----------: | :------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| **(1)** | $x_j = \sum_i y_i w_{ji}$                                                            | **Linear pre-activation aggregation:** Computes total input to unit $j$    |
 | **(2)** | $y_j = \frac{1}{1 + e^{-x_j}}$                                                       | **Logistic Sigmoid:** Continuous, smooth, non-linear squashing function      |
 | **(3)** | $E = \frac{1}{2} \sum_c \sum_j (y_{j,c} - d_{j,c})^2$                                | **Sum of Squared Errors (SSE):** Global optimization objective               |
 | **(4)** | $\frac{\partial E}{\partial y_j} = y_j - d_j$                                        | **Output Error:** Gradient of error with respect to actual output            |
-| **(5)** | $\frac{\partial E}{\partial x_j} = \frac{\partial E}{\partial y_j} y_j(1 - y_j)$     | **Delta Error Signal ($\delta_j$):** Incorporates sigmoid derivative         |
-| **(6)** | $\frac{\partial E}{\partial w_{ji}} = \frac{\partial E}{\partial x_j} y_i$           | **Weight Gradient:** Error signal $\times$ incoming activation               |
+| **(5)** | $\frac{\partial E}{\partial x_j} = \frac{\partial E}{\partial y_j} y_j(1 - y_j)$     | **Delta Error Signal ($\delta_j$):** Incorporates sigmoid derivative       |
+| **(6)** | $\frac{\partial E}{\partial w_{ji}} = \frac{\partial E}{\partial x_j} y_i$           | **Weight Gradient:** Error signal $\times$ incoming activation             |
 | **(7)** | $\frac{\partial E}{\partial y_i} = \sum_j \frac{\partial E}{\partial x_j} w_{ji}$    | **Backpropagation:** Propagates error signal backward to earlier layers      |
 | **(8)** | $\Delta w = -\varepsilon \frac{\partial E}{\partial w}$                              | **Basic Gradient Descent:** Updates weights in direction of steepest descent |
 | **(9)** | $\Delta w(t) = -\varepsilon \frac{\partial E}{\partial w}(t) + \alpha \Delta w(t-1)$ | **Momentum Update:** Accelerates through valleys and damps oscillations      |
-| **--**  | $w \leftarrow w \cdot (1 - \lambda)$                                                 | **Weight Decay:** Regularizes weights for interpretability and sparsity      |
+| **--** | $w \leftarrow w \cdot (1 - \lambda)$                                                 | **Weight Decay:** Regularizes weights for interpretability and sparsity      |
 
 ---
 
